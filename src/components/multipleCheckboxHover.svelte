@@ -1,44 +1,55 @@
 <script lang="ts">
+  import ClickIcon from "./icons/clickIcon.svelte";
+  import HoverIcon from "./icons/hoverIcon.svelte";
+
   export let elmt: HTMLElement
   let listenersOn = false
 
   const multipleCheckboxHover = () => {
     let clicking = false
+    let eventType = 'click'
     let prevCheckbox: EventTarget
     let firstCheckbox: EventTarget
- 
-    elmt.onmousemove = (e) => {
-      //@ts-ignore -> only input[type="checkbox"] with checked = false 
-      if (!clicking || !e.target || e.target.tagName !== 'INPUT' || [undefined, true].includes(e.target.checked) || [prevCheckbox, firstCheckbox].includes(e.target)) {
+
+    const onMove = (target: EventTarget | null) => {
+      if (!clicking || !target || (target as HTMLElement).tagName !== 'INPUT' || [prevCheckbox, firstCheckbox].includes(target)) {
         return
       }
 
-      prevCheckbox = e.target
-
-      //@ts-ignore
-      e.target.checked = true
-      e.target.dispatchEvent(new Event('click'))
+      prevCheckbox = target
+      target.dispatchEvent(new Event(eventType))
     }
  
-    // buttons -> 0: left, 1: middle, 2: right
+    elmt.onmousemove = (e) => onMove(e.target)
+
+    // const scrollElmt = elmt.querySelector<HTMLElement>('.virtual-list-wrapper')
+    // if(scrollElmt) scrollElmt.onscroll = (e) => onMove(e.target)
+ 
+    // e.button -> 0: left, 1: middle, 2: right
     window.onmousedown = (e) => {
-      if (e.button === 0) {
+      if ((e.button === 0 || e.button === 2) && e.target) {
         clicking = true
-        //@ts-ignore
+        eventType = e.button === 0 ? 'click' : 'contextmenu'
         firstCheckbox = e.target
       }
     }
+
     window.onmouseup = (e) => {
-      if (e.button === 0) clicking = false
+      if (e.button === 0 || e.button === 2) clicking = false
     }
-    window.onblur = () => clicking = false
+
+    window.onblur = () => {
+      clicking = false
+    }
   }
 
   $: if(elmt) {
     if(listenersOn) {
-      multipleCheckboxHover()
+      multipleCheckboxHover()  
     }
     else {
+      // const scrollElmt = elmt.querySelector<HTMLElement>('.virtual-list-wrapper')
+      // if(scrollElmt) scrollElmt.onscroll = null
       elmt.onmousemove = null
       window.onmousedown = null
       window.onmouseup = null
@@ -49,7 +60,11 @@
 
 <div>
   <button on:click={() => listenersOn = !listenersOn}>
-    Check checkboxes with hover: {listenersOn ? '✔️' : '❌'}
+    {#if listenersOn}
+      <HoverIcon /> Checking with hover
+    {:else}
+      <ClickIcon /> Checking with click
+    {/if}
   </button>
 </div>
 
@@ -58,10 +73,5 @@
     display: flex;
     justify-content: center;
     align-items: center;
-  }
-  button {
-    padding: 5px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
   }
 </style>

@@ -10,7 +10,7 @@
     text-align: center;
     margin: 10px 5%; 
     padding-bottom: 10px;
-    border-bottom: solid 1px var(--pico-form-element-border-color);
+    /* border-bottom: solid var(--pico-border-width) var(--pico-form-element-border-color); */
   }
   header h1 {
     padding: 10px
