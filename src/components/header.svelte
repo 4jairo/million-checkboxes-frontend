@@ -1,18 +1,48 @@
-<header>
-  <h1>Million checkboxes</h1>
-  <p>Check some boxes and everyone will see your changes in real-time.</p>
-  <p>⚠️It's recommended to have a window of at least 1024 pixels⚠️</p>
-</header>
+<script lang="ts">
+  import { ShowHeaderContext } from "../context/showHeaderCtx";
+  import DownIcon from "./icons/downIcon.svelte";
+  import UpIcon from "./icons/upIcon.svelte";
+
+  $: showHeader = $ShowHeaderContext
+</script>
+
+
+<div>
+  <button on:click={() => ShowHeaderContext.update(prev => !prev)}>
+    {#if showHeader}
+      <DownIcon />
+    {:else}
+      <UpIcon />
+    {/if}
+  </button>
+
+  {#if showHeader}
+    <header>
+      <h1>Million checkboxes</h1>
+      <p>Check some boxes and everyone will see your changes in real-time.</p>
+      <p>⚠️It's recommended to have a window of at least 1024 pixels⚠️</p>
+    </header>
+  {/if}
+
+</div>
 
 
 <style>
   header {
+    position: relative;
     text-align: center;
-    margin: 10px 5%; 
-    padding-bottom: 10px;
-    /* border-bottom: solid var(--pico-border-width) var(--pico-form-element-border-color); */
+  }
+  div {
+    margin: 10px auto;
+    max-width: 1024px;
+    width: 100%; 
+  }
+  button {
+    display: flex;
+    padding: 2px;
   }
   header h1 {
     padding: 10px
   }
 </style>
+

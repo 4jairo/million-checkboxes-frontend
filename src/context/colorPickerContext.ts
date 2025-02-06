@@ -1,6 +1,7 @@
 import { writable } from "svelte/store"
 
 export const COLORS = [
+  '#00000020',
   '#047878',
   '#ADD8E6',
   '#0000FF',

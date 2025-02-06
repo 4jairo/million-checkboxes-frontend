@@ -19,6 +19,5 @@
     "vite": "^5.4.1"
   },
   "dependencies": {
-    "svelte-tiny-virtual-list": "^2.1.2"
   }
 }
