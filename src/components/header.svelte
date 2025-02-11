@@ -20,7 +20,7 @@
     <header>
       <h1>Million checkboxes</h1>
       <p>Check some boxes and everyone will see your changes in real-time.</p>
-      <p>⚠️It's recommended to have a window of at least 1024 pixels⚠️</p>
+      <p>⚠️It's recommended to have a window of at least 1250 pixels wide⚠️</p>
     </header>
   {/if}
 
@@ -34,7 +34,7 @@
   }
   div {
     margin: 10px auto;
-    max-width: 1024px;
+    max-width: 1250px;
     width: 100%; 
   }
   button {

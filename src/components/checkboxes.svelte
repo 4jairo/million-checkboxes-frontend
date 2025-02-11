@@ -8,6 +8,7 @@
   import ServerOffIcon from "./icons/serverOffIcon.svelte";
   import ColorPicker from "./colorPicker.svelte";
   import LazyRenderer from "./lazyRenderer.svelte";
+  import UsersIcon from "./icons/usersIcon.svelte";
 
   let checkboxContainer: HTMLElement
   let focusCheckbox: ((focused: number) => Promise<void>) | null = null
@@ -43,8 +44,21 @@
             <ServerIcon size={20} />
           {:else}
             <ServerOffIcon size={20} />
+            <LoadingGif />
           {/if}
           {checkboxValuesContext.wsConnected}
+        </code>
+      </p>
+
+      <p>
+        <code style="border-color: {checkboxValuesContext.wsConnected == WsConnectionState.Connected ? 'green' : 'red'};">
+          <UsersIcon /> 
+
+          {#if checkboxValuesContext.wsConnected == WsConnectionState.Connected}
+            <p>{checkboxValuesContext.onlineUsers} online</p>
+          {:else}
+            <LoadingGif />
+          {/if}
         </code>
       </p>
 
@@ -73,7 +87,7 @@
     height: 100%;
     padding: 0 10px 10px 10px;
     margin: 0 auto;
-    max-width: 1024px;
+    max-width: 1250px;
     display: flex;
     flex-direction: column;
   }

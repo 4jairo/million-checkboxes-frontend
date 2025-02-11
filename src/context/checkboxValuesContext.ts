@@ -12,15 +12,33 @@ export const enum WsConnectionState {
   Disconnected = 'Disconnected'
 }
 
-const enum WsMessageType {
+/* msg examples:
+
+[---2bits----|---------2bits----------|-4bits-|-32bits--]
+[ msg type   | sub msg                |       |         ]
+---------------------------------------------------------
+[   bitmap   | BitmapMessage.Add      |       |checkbox ]
+[   bitmap   | BitmapMessage.Sub      |       |checkbox ]
+[   bitmap   | BitmapMessage.Set      | 0-15  |checkbox ]
+---------------------------------------------------------
+[online users|                        |       |users num]
+
+*/
+
+enum WsMessage {
+  Bitmap,
+  OnlineUsers
+}
+enum BitmapMessage {
   Add,
   Sub,
   Set
 }
-type WsMessage = 
-  | { msgType: WsMessageType.Add }
-  | { msgType: WsMessageType.Sub }
-  | { msgType: WsMessageType.Set, value: number }
+
+type BitmapMessageType = 
+  | { bitmap: BitmapMessage.Add, value: undefined }
+  | { bitmap: BitmapMessage.Sub, value: undefined }
+  | { bitmap: BitmapMessage.Set, value: number }
 
 const createContext = () => {
   let socket: WebSocket | null = null
@@ -28,27 +46,38 @@ const createContext = () => {
 
   const State = writable<{
     wsConnected: WsConnectionState,
-    values: Uint8Array
+    bitmap: Uint8Array,
+    onlineUsers: number
   }>({
     wsConnected: WsConnectionState.Disconnected,
-    values: new Uint8Array(UINT8ARRAY_SIZE)
+    bitmap: new Uint8Array(UINT8ARRAY_SIZE),
+    onlineUsers: 0
   })
   
   const incrementValue = (i: number) => {
     if(socket && socket.readyState == WebSocket.OPEN) {
-      socket.send(`${i};add`)
+      const msg = new Uint8Array(5)
+      msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Add << 4)
+      new DataView(msg.buffer).setUint32(1, i, true)
+      socket.send(msg)
     }
   }
 
   const decrementValue = (i: number) => {
     if(socket && socket.readyState == WebSocket.OPEN) {
-      socket.send(`${i};sub`)
+      const msg = new Uint8Array(5)
+      msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Sub << 4)
+      new DataView(msg.buffer).setUint32(1, i, true)
+      socket.send(msg)
     }
   }
 
   const setValue = (i: number, value: number) => {
     if(socket && socket.readyState == WebSocket.OPEN && value >= 0 && value <= 15) {
-      socket.send(`${i};set;${value}`)
+      const msg = new Uint8Array(5)
+      msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Set << 4) | value
+      new DataView(msg.buffer).setUint32(1, i, true)
+      socket.send(msg)
     }
   }
 
@@ -69,31 +98,44 @@ const createContext = () => {
     }
   }
 
+  const onWsMessage = (msg: Uint8Array) => {
+    const byte1 = msg[0]
+    const type = (byte1 >> 6) & 0b11 // first 2 bits
+    const operation = (byte1 >> 4) & 0b11 // next 2 bits
+    const i = new DataView(msg.buffer).getUint32(1, true) // last 32 bits
+
+    if(type === WsMessage.Bitmap) {
+      const newValueSet = byte1 & 0b1111 // last 4 bits
+
+      if (!(operation in BitmapMessage) || (operation === BitmapMessage.Set && !newValueSet)) {
+        return
+      }
+
+      let ws_msg: BitmapMessageType = {
+        bitmap: operation,
+        value: operation === BitmapMessage.Set ? newValueSet : undefined
+      }
+   
+      setValueOnBuf(i, ws_msg)
+    } else {
+      updateOnlineUsers(i)
+    }
+  }
+
   const connectWsInner = async () => {
     setConnectionState(WsConnectionState.Connecting)
 
     return new Promise(async (resolve, reject) => { 
       const ws = new WebSocket(WS_URL)
 
-      ws.onmessage = (e) => {
-        const msg = e.data as string // msg -> "1234;true"
-        console.log({msg})
+      ws.onmessage = async (e) => {
+        const arrayBuffer = await (e.data as Blob).arrayBuffer()
+        const u8Array = new Uint8Array(arrayBuffer)
 
-        const [i, operation, newValueSet] = msg.split(';')
-        const parsedI = parseInt(i)
-        let ws_msg: WsMessage;
-        
-        if(operation === 'add') {
-          ws_msg = { msgType: WsMessageType.Add }
-        } else if(operation === 'sub') {
-          ws_msg = { msgType: WsMessageType.Sub }
-        } else if(operation === 'set') {
-          ws_msg = { msgType: WsMessageType.Set, value: parseInt(newValueSet) }
-        } else {
-          return
+        console.log(u8Array)
+        if(u8Array.length === 5) {
+          onWsMessage(u8Array)
         }
-
-        setValueOnBuf(parsedI, ws_msg)
       }
 
       ws.onopen	= () => {
@@ -126,13 +168,13 @@ const createContext = () => {
     }
 
     State.update((prev) => {
-      prev.values = result
+      prev.bitmap = result
       return prev
     })
     
   }
 
-  const setValueOnBuf = (i: number, ws_msg: WsMessage) => {
+  const setValueOnBuf = (i: number, ws_msg: BitmapMessageType) => {
     if (i > CHECKBOX_COUNT || i < 0) return
 
     const byte = Math.floor((i * 4 ) / 8)
@@ -140,24 +182,31 @@ const createContext = () => {
 
     State.update((prev) => {
       let bitsValue = first4Bits
-        ? prev.values[byte] >> 4
-        : prev.values[byte] & 0b00001111
+        ? prev.bitmap[byte] >> 4
+        : prev.bitmap[byte] & 0b00001111
 
-      if(ws_msg.msgType === WsMessageType.Add) {
+      if(ws_msg.bitmap === BitmapMessage.Add) {
         bitsValue += 1
-      } else if(ws_msg.msgType === WsMessageType.Sub) {
+      } else if(ws_msg.bitmap === BitmapMessage.Sub) {
         bitsValue -= 1
-      } else if(ws_msg.msgType === WsMessageType.Set) {
+      } else if(ws_msg.bitmap === BitmapMessage.Set) {
         bitsValue = ws_msg.value
       }
 
       if (bitsValue > 15) bitsValue = 0
       if (bitsValue < 0) bitsValue = 15
 
-      prev.values[byte] = first4Bits
-        ? (prev.values[byte] & 0b00001111) | (bitsValue << 4)
-        : (prev.values[byte] & 0b11110000) | bitsValue
+      prev.bitmap[byte] = first4Bits
+        ? (prev.bitmap[byte] & 0b00001111) | (bitsValue << 4)
+        : (prev.bitmap[byte] & 0b11110000) | bitsValue
 
+      return prev
+    })
+  }
+
+  const updateOnlineUsers = (newValue: number) => {
+    State.update((prev) => {
+      prev.onlineUsers = newValue
       return prev
     })
   }

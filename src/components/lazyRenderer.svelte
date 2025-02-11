@@ -8,31 +8,25 @@
 
   export let setFocusCheckbox: (f: ((focusedCheckboxIdx: number) => Promise<void>) | null) => void
   let containerElmt: HTMLElement
-  let contentElmt: HTMLElement
   $: checkboxValuesContext = $CheckboxValuesContext
   $: colorPickerCtx = $ColorPickerContext
   $: showHeader = $ShowHeaderContext
 
   const OVERCOUNT_ROWS = 1
-  const MAX_CHECKBOX_PER_ROW = 40
+  const CHECKBOX_PER_ROW = 50
   const CHECKBOX_SIZE = 24 // 20 + (2+2 margin)
-  let checkboxsInRow = 0
   let renderRows = 0
   let rowIdx = 0
 
   $: renderRowsArr = Array(renderRows).fill(0)
-  $: checkboxsInRowArr = Array(checkboxsInRow).fill(0)
+  $: checkboxsInRowArr = Array(CHECKBOX_PER_ROW).fill(0)
 
   const handleResize = () => {
-    const { width } = contentElmt.getBoundingClientRect()
     const { height } = containerElmt.getBoundingClientRect()
-    
     renderRows = Math.floor(height / CHECKBOX_SIZE) + OVERCOUNT_ROWS
-    checkboxsInRow = Math.min(Math.floor(width / CHECKBOX_SIZE), MAX_CHECKBOX_PER_ROW)
   }
 
   const handleScroll = () => {
-    // value between 0 - 1 -> containerElmt.scrollTop / (containerElmt.scrollHeight - containerElmt.clientHeight)
     rowIdx = Math.floor(containerElmt.scrollTop / CHECKBOX_SIZE)
   }
 
@@ -47,7 +41,7 @@
   }
 
   const scrollToCheckbox = async (focusedCheckboxIdx: number) => {
-    const checkboxRow = Math.floor(focusedCheckboxIdx / checkboxsInRow)
+    const checkboxRow = Math.floor(focusedCheckboxIdx / CHECKBOX_PER_ROW)
 
     containerElmt.scrollTo({
       top: (checkboxRow - (renderRows / 2)) * CHECKBOX_SIZE,
@@ -60,14 +54,14 @@
       row = document.getElementById(`row-${checkboxRow}`)
     }
 
-    const input = row.querySelector(`input:nth-child(${focusedCheckboxIdx % checkboxsInRow + 1})`) as HTMLInputElement
+    const input = row.querySelector(`input:nth-child(${focusedCheckboxIdx % CHECKBOX_PER_ROW + 1})`) as HTMLInputElement
     if (input) input.focus()
   }
 
   $: {
     showHeader;
     tick().then(() => {
-      if(containerElmt && contentElmt) handleResize()
+      if(containerElmt) handleResize()
     })
   }
 
@@ -87,15 +81,14 @@
 <main class="containerElmt" bind:this={containerElmt}>
   <div 
     class="contentElmt"
-    style="height: {CHECKBOX_COUNT / checkboxsInRow * CHECKBOX_SIZE}px"
-    bind:this={contentElmt}
+    style="height: {CHECKBOX_COUNT / CHECKBOX_PER_ROW * CHECKBOX_SIZE}px"
   >
     {#each renderRowsArr as _, row (row)}
       {@const rowI = row + rowIdx}
       <div class="row" id="row-{rowI}" style="top: {rowI * CHECKBOX_SIZE}px">
         {#each checkboxsInRowArr as _, col (col)}
-          {@const i = rowI * checkboxsInRow + col}
-          {@const value = CheckboxValuesContext.getValue(i, checkboxValuesContext.values)}
+          {@const i = rowI * CHECKBOX_PER_ROW + col}
+          {@const value = CheckboxValuesContext.getValue(i, checkboxValuesContext.bitmap)}
 
           <input
             type="checkbox"
@@ -116,6 +109,7 @@
     height: 100%;
     position: relative;
     overflow-y: scroll;
+    overflow-x: auto;
   }
   .contentElmt {
     position: absolute;

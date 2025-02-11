@@ -4,6 +4,7 @@ export const WS_URL = `${BASE_URL}/ws`
 export const fetchGetCheckboxValues = async () => {
   try {
     const response = await fetch(`${BASE_URL}/bits`);
+    // const response = await fetch(`https://million-checkboxes.4jairo.tech/api/bits`);
     const values = response.ok 
       ? await response.arrayBuffer() 
       : new ArrayBuffer(0)

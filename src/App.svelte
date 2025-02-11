@@ -1,7 +1,7 @@
 <script>
   import Header from "./components/header.svelte";
-  import LazyRender from "./components/lazyRender.svelte";
+  import Checkboxes from "./components/checkboxes.svelte";
 </script>
 
 <Header />
-<LazyRender />
+<Checkboxes />
