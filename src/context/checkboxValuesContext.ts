@@ -42,7 +42,7 @@ type BitmapMessageType =
 
 const createContext = () => {
   let socket: WebSocket | null = null
-  let fetchValuesFailed = false
+  let fetchBitmapFailed = false
 
   const State = writable<{
     wsConnected: WsConnectionState,
@@ -55,46 +55,60 @@ const createContext = () => {
   })
   
   const incrementValue = (i: number) => {
-    if(socket && socket.readyState == WebSocket.OPEN) {
-      const msg = new Uint8Array(5)
-      msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Add << 4)
-      new DataView(msg.buffer).setUint32(1, i, true)
-      socket.send(msg)
-    }
+    const msg = new Uint8Array(5)
+    msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Add << 4)
+    new DataView(msg.buffer).setUint32(1, i, true)
+    sendMessage(msg)
   }
 
   const decrementValue = (i: number) => {
-    if(socket && socket.readyState == WebSocket.OPEN) {
-      const msg = new Uint8Array(5)
-      msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Sub << 4)
-      new DataView(msg.buffer).setUint32(1, i, true)
-      socket.send(msg)
-    }
+    const msg = new Uint8Array(5)
+    msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Sub << 4)
+    new DataView(msg.buffer).setUint32(1, i, true)
+    sendMessage(msg)
+    
   }
 
   const setValue = (i: number, value: number) => {
-    if(socket && socket.readyState == WebSocket.OPEN && value >= 0 && value <= 15) {
-      const msg = new Uint8Array(5)
-      msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Set << 4) | value
-      new DataView(msg.buffer).setUint32(1, i, true)
+    const msg = new Uint8Array(5)
+    msg[0] = (WsMessage.Bitmap << 6) | (BitmapMessage.Set << 4) | value
+    new DataView(msg.buffer).setUint32(1, i, true)
+    sendMessage(msg)
+  }
+
+  const sendMessage = async (msg: string | ArrayBufferLike | Blob | ArrayBufferView<ArrayBufferLike>) => {
+    if(!socket) {
+      await connectWs({ attepmts: 3, timeBetween: 100, refetchBitmap: true })
+    }
+
+    if(socket && socket.readyState == WebSocket.OPEN) {
       socket.send(msg)
     }
   }
 
-  const connectWs = async (conf: { attepmts: number, timeBetween: number }) => {
+  const connectWs = async (conf: { attepmts: number, timeBetween: number, refetchBitmap: boolean }) => {
+    if(socket) return
+
     for (let i = 0; i < conf.attepmts; i++) {
-      if(fetchValuesFailed) {
-    
-        setConnectionState(WsConnectionState.Disconnected)
-        return
+      if(fetchBitmapFailed && conf.refetchBitmap) {
+        await fetchBitmap()
+        if(fetchBitmapFailed) {
+          console.log('try', i);
+          continue
+        }
       }
 
       try {
         socket = await connectWsInner()
         break
       } catch (error) {
+        console.log('try', i);
         await new Promise(r => setTimeout(r, conf.timeBetween))
       }
+    }
+
+    if(fetchBitmapFailed || !socket) {
+      setConnectionState(WsConnectionState.Disconnected)
     }
   }
 
@@ -145,6 +159,7 @@ const createContext = () => {
 
       ws.onclose = () => {
         setConnectionState(WsConnectionState.Disconnected)
+        socket = null
         reject()
       }
     }) as Promise<WebSocket>
@@ -157,12 +172,12 @@ const createContext = () => {
     })
   }
 
-  const fetchValues = async () => {
+  const fetchBitmap = async () => {
     const result = await fetchGetCheckboxValues()
 
     if (result.length !== UINT8ARRAY_SIZE) {
       setConnectionState(WsConnectionState.Disconnected)
-      fetchValuesFailed = true
+      fetchBitmapFailed = true
       socket = null
       return
     }
@@ -226,7 +241,7 @@ const createContext = () => {
 
   return {
     subscribe: State.subscribe,
-    fetchValues,
+    fetchBitmap,
     connectWs,
     incrementValue,
     decrementValue,

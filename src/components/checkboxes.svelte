@@ -14,7 +14,7 @@
   let focusCheckbox: ((focused: number) => Promise<void>) | null = null
   $: checkboxValuesContext = $CheckboxValuesContext
 
-  CheckboxValuesContext.connectWs({ attepmts: 3, timeBetween: 500 })
+  CheckboxValuesContext.connectWs({ attepmts: 3, timeBetween: 500, refetchBitmap: true })
 
   const handleGoToCheckbox = async (e: SubmitEvent & {currentTarget: EventTarget & HTMLFormElement}) => {
     const number = parseInt(e.currentTarget.number.value) -1
@@ -32,7 +32,7 @@
   bind:this={checkboxContainer}
   on:contextmenu|preventDefault
 >
-  {#await CheckboxValuesContext.fetchValues()}  
+  {#await CheckboxValuesContext.fetchBitmap()}  
     <div class="loading">
       <LoadingGif size={30}/>
     </div>
