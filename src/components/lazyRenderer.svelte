@@ -12,18 +12,24 @@
   $: colorPickerCtx = $ColorPickerContext
   $: showHeader = $ShowHeaderContext
 
-  const OVERCOUNT_ROWS = 1
   const CHECKBOX_PER_ROW = 50
   const CHECKBOX_SIZE = 24 // 20 + (2+2 margin)
+  const TOTAL_ROWS = CHECKBOX_COUNT / CHECKBOX_PER_ROW
   let renderRows = 0
   let rowIdx = 0
+  let extraScrollHeight = 0
 
   $: renderRowsArr = Array(renderRows).fill(0)
-  $: checkboxsInRowArr = Array(CHECKBOX_PER_ROW).fill(0)
+  const checkboxsInRowArr = Array(CHECKBOX_PER_ROW).fill(0)
 
   const handleResize = () => {
-    const { height } = containerElmt.getBoundingClientRect()
-    renderRows = Math.floor(height / CHECKBOX_SIZE) + OVERCOUNT_ROWS
+    if(!containerElmt) return
+    renderRows = Math.floor((containerElmt.clientHeight) / CHECKBOX_SIZE)
+   
+    const fitRows = Math.floor((containerElmt.scrollHeight - containerElmt.clientHeight) / CHECKBOX_SIZE) + renderRows
+    if(fitRows < TOTAL_ROWS) {
+      extraScrollHeight = (TOTAL_ROWS - fitRows) * CHECKBOX_SIZE
+    }
   }
 
   const handleScroll = () => {
@@ -60,9 +66,7 @@
 
   $: {
     showHeader;
-    tick().then(() => {
-      if(containerElmt) handleResize()
-    })
+    tick().then(handleResize)
   }
 
   onMount(() => {
@@ -78,48 +82,51 @@
   })
 </script>
 
-<main class="containerElmt" bind:this={containerElmt}>
-  <div 
-    class="contentElmt"
-    style="height: {CHECKBOX_COUNT / CHECKBOX_PER_ROW * CHECKBOX_SIZE}px"
-  >
-    {#each renderRowsArr as _, row (row)}
-      {@const rowI = row + rowIdx}
-      <div class="row" id="row-{rowI}" style="top: {rowI * CHECKBOX_SIZE}px">
-        {#each checkboxsInRowArr as _, col (col)}
-          {@const i = rowI * CHECKBOX_PER_ROW + col}
-          {@const value = CheckboxValuesContext.getValue(i, checkboxValuesContext.bitmap)}
-
-          <input
-            type="checkbox"
-            class="color-{value}"
-            checked={value > 0}
-            on:click|preventDefault={() => handleClick(true, i)}
-            on:contextmenu|preventDefault={() => handleClick(false, i)}
-          />
-        {/each}
-      </div>
-    {/each}
+<div class="containerElmt" bind:this={containerElmt}>
+  <div
+    class="scroll"
+    style="height: {TOTAL_ROWS * CHECKBOX_SIZE + extraScrollHeight}px"
+  > 
   </div>
-</main>
+
+  {#each renderRowsArr as _, row (row)}
+    {@const rowI = row + rowIdx}
+  
+    <div class="row" id="row-{rowI}" style="top: {CHECKBOX_SIZE * row}px">
+      {#each checkboxsInRowArr as _, col (col)}
+        {@const i = rowI * CHECKBOX_PER_ROW + col}
+        {@const value = CheckboxValuesContext.getValue(i, checkboxValuesContext.bitmap)}
+  
+        <input
+          data-checkbox={i}
+          type="checkbox"
+          class="focus-{value >= 7 && value <= 8 ? 'black' : 'white'} color-{value}"
+          checked={value > 0}
+          on:click|preventDefault={() => handleClick(true, i)}
+          on:contextmenu|preventDefault={() => handleClick(false, i)}
+        />
+      {/each}
+    </div>
+  {/each}
+</div>
+
 
 <style>
   .containerElmt {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    overflow-y: scroll;
-    overflow-x: auto;
-  }
-  .contentElmt {
-    position: absolute;
     inset: 0;
+    position: absolute;
+    overflow-y: scroll
+  }
+  .scroll {
+    position: absolute;
     width: 100%;
   }
 
   .row {
-    position: absolute;
+    position: sticky;
+    inset: 0;
     display: flex;
+    width: 1200px; /* CHECKBOX_SIZE * CHECKBOX_PER_ROW */
     justify-content: center;
   }
   
@@ -146,109 +153,70 @@
   #00FF00 (Green) → #003300 (Very Dark Green)
   #008000 (Green) → #003600 (Darker Green)
   */
+  .focus-white:focus {
+    --pico-box-shadow: 0 0 0 2px #fff
+  }
+  .focus-black:focus {
+    --pico-box-shadow: 0 0 0 2px #000
+  }
   .color-1 {
     background-color: #047878;
-    border: var(--pico-border-width) soild #047878;
-  }
-  .color-1:focus {
-    --pico-box-shadow: 0 0 0 2px #003f3f;
+    border: var(--pico-border-width) solid #047878;
   }
   .color-2 {
     background-color: #ADD8E6;
-    border: var(--pico-border-width) soild #ADD8E6;
-  }
-  .color-2:focus {
-    --pico-box-shadow: 0 0 0 2px #35659c;
+    border: var(--pico-border-width) solid #ADD8E6;
   }
   .color-3 {
     background-color: #0000FF;
-    border: var(--pico-border-width) soild #0000FF;
-  }
-  .color-3:focus {
-    --pico-box-shadow: 0 0 0 2px #00005E;
+    border: var(--pico-border-width) solid #0000FF;
   }
   .color-4 {
     background-color: #800080;
-    border: var(--pico-border-width) soild #800080;
-  }
-  .color-4:focus {
-    --pico-box-shadow: 0 0 0 2px #3A003A;
+    border: var(--pico-border-width) solid #800080;
   }
   .color-5 {
     background-color: #FF00FF;
-    border: var(--pico-border-width) soild #FF00FF;
-  }
-  .color-5:focus {
-    --pico-box-shadow: 0 0 0 2px #6A006A;
+    border: var(--pico-border-width) solid #FF00FF;
   }
   .color-6 {
     background-color: #FFC0CB;
-    border: var(--pico-border-width) soild #FFC0CB;
-  }
-  .color-6:focus {
-    --pico-box-shadow: 0 0 0 2px #ff87c3;
+    border: var(--pico-border-width) solid #FFC0CB;
   }
   .color-7 {
     background-color: #FFFFFF;
-    border: var(--pico-border-width) soild #FFFFFF;
-  }
-  .color-7:focus {
-    --pico-box-shadow: 0 0 0 2px #B0B0B0;
+    border: var(--pico-border-width) solid #FFFFFF;
   }
   .color-8 {
     background-color: #D3D3D3;
-    border: var(--pico-border-width) soild #D3D3D3;
-  }
-  .color-8:focus {
-    --pico-box-shadow: 0 0 0 2px #808080;
+    border: var(--pico-border-width) solid #D3D3D3;
   }
   .color-9 {
     background-color: #080808;
-    border: var(--pico-border-width) soild #080808;
-  }
-  .color-9:focus {
-    --pico-box-shadow: 0 0 0 2px #000000;
+    border: var(--pico-border-width) solid #080808;
   }
   .color-10 {
     background-color: #8B4513;
-    border: var(--pico-border-width) soild #8B4513;
-  }
-  .color-10:focus {
-    --pico-box-shadow: 0 0 0 2px #3E1F0E;
+    border: var(--pico-border-width) solid #8B4513;
   }
   .color-11 {
     background-color: #FF0000;
-    border: var(--pico-border-width) soild #FF0000;
-  }
-  .color-11:focus {
-    --pico-box-shadow: 0 0 0 2px #8B0000;
+    border: var(--pico-border-width) solid #FF0000;
   }
   .color-12 {
     background-color: #FFA500;
-    border: var(--pico-border-width) soild #FFA500;
-  }
-  .color-12:focus {
-    --pico-box-shadow: 0 0 0 2px #CC8400;
+    border: var(--pico-border-width) solid #FFA500;
   }
   .color-13 {
     background-color: #FFFF00;
-    border: var(--pico-border-width) soild #FFFF00;
-  }
-  .color-13:focus {
-    --pico-box-shadow: 0 0 0 2px #AFAF00;
+    border: var(--pico-border-width) solid #FFFF00;
   }
   .color-14 {
     background-color: #00FF00;
-    border: var(--pico-border-width) soild #00FF00;
-  }
-  .color-14:focus {
-    --pico-box-shadow: 0 0 0 2px #003300;
+    border: var(--pico-border-width) solid #00FF00;
   }
   .color-15 {
     background-color: #008000;
-    border: var(--pico-border-width) soild #008000;
-  }
-  .color-15:focus {
-    --pico-box-shadow: 0 0 0 2px #003600;
+    border: var(--pico-border-width) solid #008000;
   }
 </style>
