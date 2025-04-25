@@ -98,7 +98,6 @@
         {@const value = CheckboxValuesContext.getValue(i, checkboxValuesContext.bitmap)}
   
         <input
-          data-checkbox={i}
           type="checkbox"
           class="focus-{value >= 7 && value <= 8 ? 'black' : 'white'} color-{value}"
           checked={value > 0}
