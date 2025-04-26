@@ -1,10 +1,15 @@
 import { writable } from "svelte/store";
 import { fetchGetCheckboxValues, WS_URL } from "../lib/fetch";
 
+// bitmap
 export const BTIS_PER_CHECKBOX = 4;
 export const CHECKBOX_COUNT = 1_000_000;
 export const UINT8ARRAY_SIZE = CHECKBOX_COUNT * BTIS_PER_CHECKBOX / 8;
-
+ 
+// render
+export const CHECKBOX_PER_ROW = 50
+export const CHECKBOX_SIZE = 24 // 20 + (2+2 margin)
+export const TOTAL_ROWS = CHECKBOX_COUNT / CHECKBOX_PER_ROW
 
 export const enum WsConnectionState {
   Connecting = 'Connecting...',

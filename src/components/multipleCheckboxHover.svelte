@@ -69,9 +69,10 @@
 </div>
 
 <style>
-  div {
+  button {
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 5px
   }
 </style>

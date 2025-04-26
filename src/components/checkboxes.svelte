@@ -9,6 +9,7 @@
   import ColorPicker from "./colorPicker.svelte";
   import LazyRenderer from "./lazyRenderer.svelte";
   import UsersIcon from "./icons/usersIcon.svelte";
+  import BitmapAsImage from "./bitmapAsImage.svelte";
 
   let checkboxContainer: HTMLElement
   let focusCheckbox: ((focused: number) => Promise<void>) | null = null
@@ -20,6 +21,8 @@
     const number = parseInt(e.currentTarget.number.value) -1
     if(focusCheckbox) focusCheckbox(number)
   }
+
+  $: codeBorderColor = checkboxValuesContext.wsConnected == WsConnectionState.Connected ? 'green' : 'red'
 
   const preventOverCheckboxCount = (e: Event & {currentTarget: EventTarget & HTMLInputElement}) => {
     const num = parseInt(e.currentTarget.value)
@@ -39,7 +42,7 @@
   {:then _}
     <div class="header">
       <p>
-        <code style="border-color: {checkboxValuesContext.wsConnected == WsConnectionState.Connected ? 'green' : 'red'};"> 
+        <code style="border-color: {codeBorderColor};"> 
           {#if checkboxValuesContext.wsConnected == WsConnectionState.Connected}
             <ServerIcon size={20} />
           {:else}
@@ -51,7 +54,7 @@
       </p>
 
       <p>
-        <code style="border-color: {checkboxValuesContext.wsConnected == WsConnectionState.Connected ? 'green' : 'red'};">
+        <code style="border-color: {codeBorderColor};">
           <UsersIcon /> 
 
           {#if checkboxValuesContext.wsConnected == WsConnectionState.Connected}
@@ -62,6 +65,7 @@
         </code>
       </p>
 
+      <BitmapAsImage />
       <MultipleCheckboxHover elmt={checkboxContainer} />
       
       <form on:submit|preventDefault={handleGoToCheckbox}>

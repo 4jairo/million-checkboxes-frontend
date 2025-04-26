@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { onDestroy, onMount, tick } from "svelte";
-  import { CHECKBOX_COUNT, CheckboxValuesContext } from "../context/checkboxValuesContext";
+  import { CHECKBOX_PER_ROW, CHECKBOX_SIZE, CheckboxValuesContext, TOTAL_ROWS } from "../context/checkboxValuesContext";
   import { ColorPickerContext } from "../context/colorPickerContext";
   import { ShowHeaderContext } from "../context/showHeaderCtx";
 
@@ -12,9 +12,6 @@
   $: colorPickerCtx = $ColorPickerContext
   $: showHeader = $ShowHeaderContext
 
-  const CHECKBOX_PER_ROW = 50
-  const CHECKBOX_SIZE = 24 // 20 + (2+2 margin)
-  const TOTAL_ROWS = CHECKBOX_COUNT / CHECKBOX_PER_ROW
   let renderRows = 0
   let rowIdx = 0
   let extraScrollHeight = 0
