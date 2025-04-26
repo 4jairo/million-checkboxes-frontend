@@ -1,24 +1,5 @@
 import { writable } from "svelte/store"
 
-export const COLORS2 = [
-  '#00000020',
-  '#047878',
-  '#ADD8E6',
-  '#0000FF',
-  '#800080',
-  '#FF00FF',
-  '#FFC0CB',
-  '#FFFFFF',
-  '#D3D3D3',
-  '#080808',
-  '#8B4513',
-  '#FF0000',
-  '#FFA500',
-  '#FFFF00',
-  '#00FF00',
-  '#008000',
-]
-
 export const COLORS = [
   'rgba(0, 0, 0, 0.13)',
   'rgba(4, 120, 120, 1.00)',
